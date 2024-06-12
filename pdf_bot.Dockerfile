@@ -14,6 +14,7 @@ RUN pip install --upgrade -r requirements.txt
 
 COPY pdf_bot.py .
 COPY chains.py .
+COPY utils.py .
 
 EXPOSE 8503
 

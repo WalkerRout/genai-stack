@@ -26,6 +26,7 @@ def main():
 
       async def pull_model():
         process = await asyncio.create_subprocess_shell(
+          # the following `ollama show` command will produce "Error: model 'llama2' not found", it is expected to error at this point
           f"bash -c './usr/local/bin/ollama show {llm} --modelfile > /dev/null || ./usr/local/bin/ollama pull {llm}'",
           env={"OLLAMA_HOST": url}
         )

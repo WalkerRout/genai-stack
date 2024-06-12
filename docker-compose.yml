@@ -59,7 +59,7 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
-      - LLM=${LLM-llama2}
+      - LLM=${LLM}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL}
       - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2-false} # false by default to not use tracing
       - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT}
