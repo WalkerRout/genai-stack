@@ -2,4 +2,4 @@
 
 docker compose down
 docker system prune
-docker compose --profile ollama up
+docker compose --profile ollama up --build
