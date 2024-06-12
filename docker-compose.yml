@@ -1,0 +1,86 @@
+services:
+
+  llm: &llm
+    image: ollama/ollama:latest
+    profiles: ["ollama"]
+    networks:
+      - net
+
+  # use GPU with llm, may need to change .env's ollama url to go to http://llm-gpu:...
+  #llm-gpu:
+  #  <<: *llm
+  #  profiles: ["ollama-gpu"]
+  #  deploy:
+  #    resources:
+  #      reservations:
+  #        devices:
+  #          - driver: nvidia
+  #            count: all
+  #            capabilities: [gpu]
+
+  pull-model:
+    image: genai-stack/pull-model:latest
+    build:
+      context: .
+      dockerfile: pull_model.Dockerfile
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - LLM=${LLM}
+    networks:
+      - net
+    tty: true
+
+  database:
+    user: neo4j:neo4j
+    image: neo4j:5.11
+    volumes:
+      - $PWD/data:/data
+    environment:
+      - NEO4J_AUTH=${NEO4J_USERNAME}/${NEO4J_PASSWORD}
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_db_tx__log_rotation_retention__policy=false
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*
+    healthcheck:
+        test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider localhost:7474 || exit 1"]
+        interval: 15s
+        timeout: 30s
+        retries: 10
+    networks:
+      - net
+
+  pdf_bot:
+    build:
+      context: .
+      dockerfile: pdf_bot.Dockerfile
+    environment:
+      - NEO4J_URI=${NEO4J_URI}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD}
+      - NEO4J_USERNAME=${NEO4J_USERNAME}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+      - LLM=${LLM-llama2}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2-false} # false by default to not use tracing
+      - LANGCHAIN_ENDPOINT=${LANGCHAIN_ENDPOINT}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT}
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+    networks:
+      - net
+    depends_on:
+      database:
+        condition: service_healthy
+      pull-model:
+        condition: service_completed_successfully
+    x-develop:
+      watch:
+        - action: rebuild
+          path: .
+    ports:
+      - 8503:8503
+      
+networks:
+  net:
